@@ -1,0 +1,19 @@
+---
+  repos:
+    - repo: https://github.com/pre-commit/pre-commit-hooks
+      rev: v3.2.0
+      hooks:
+        - id: trailing-whitespace
+        - id: check-yaml
+        - id: end-of-file-fixer
+        - id: check-merge-conflict
+    - repo: local
+      hooks:
+        - id: check_code
+          name: check_code
+          entry: make check_code
+          language: system
+          always_run: true
+          verbose: true
+          fail_fast: true
+          pass_filenames: false

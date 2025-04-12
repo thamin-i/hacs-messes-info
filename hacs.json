@@ -1,0 +1,9 @@
+{
+    "name": "Messes Info Scraper",
+    "content_in_root": false,
+    "domain": "messes_info",
+    "zip_release": false,
+    "country": "all",
+    "homeassistant": "2023.0.0",
+    "icon": "icon.png"
+}
