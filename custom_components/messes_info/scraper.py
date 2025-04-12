@@ -61,6 +61,7 @@ def parse_masses(html: str) -> t.Dict[str, t.Any]:
     for article in articles:
         mass: t.Dict[str, str] = parse_mass_from_soup(t.cast(Tag, article))
         masses[f"{mass['title']}{mass['subtitle']}"] = mass
+    print(f"Found {len(masses)} masses")
     return masses
 
 

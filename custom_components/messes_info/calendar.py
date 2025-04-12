@@ -91,7 +91,9 @@ class ChurchMassCalendar(CalendarEntity):
         await self.coordinator.async_request_refresh()
 
         self._events = []
+        print(f"Iterating over {len(self.coordinator.data.get('masses', []))} masses")
         for mass in self.coordinator.data.get("masses", []):
+            print(f"Processing mass: {mass}")
             dt = dt_util.parse_datetime(f"{mass['date']}T{mass['hour']}")
             if dt is None:
                 continue
