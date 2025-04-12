@@ -19,8 +19,11 @@ class ChurchMassCalendar(CalendarEntity):
     _name: str
     coordinator: MessesInfoCoordinator
     _events: t.List[CalendarEvent]
+    _unique_id: str
 
-    def __init__(self, name: str, coordinator: MessesInfoCoordinator) -> None:
+    def __init__(
+        self, name: str, coordinator: MessesInfoCoordinator, unique_id: str
+    ) -> None:
         """Initialize the calendar entity.
 
         Args:
@@ -30,6 +33,7 @@ class ChurchMassCalendar(CalendarEntity):
         self._name = name
         self.coordinator = coordinator
         self._events = []
+        self._unique_id = unique_id
 
     @property
     def name(self) -> str:
@@ -39,6 +43,15 @@ class ChurchMassCalendar(CalendarEntity):
             str: Name of the calendar.
         """
         return self._name
+
+    @property
+    def unique_id(self) -> str:
+        """Return the unique ID of the calendar.
+
+        Returns:
+            str: Unique ID of the calendar.
+        """
+        return self._unique_id
 
     @property
     def event(self) -> CalendarEvent | None:
@@ -129,4 +142,5 @@ async def async_setup_entry(
         async_add_entities (AddEntitiesCallback): Callback to add entities.
     """
     coordinator: MessesInfoCoordinator = hass.data[DOMAIN][entry.entry_id]
-    async_add_entities([ChurchMassCalendar(entry.title, coordinator)], True)
+    unique_id: str = f"messe_info_{entry.data['postal_code']}_{entry.data['church_name'].lower().replace(' ', '_')}"  # pylint: disable=line-too-long
+    async_add_entities([ChurchMassCalendar(entry.title, coordinator, unique_id)], True)

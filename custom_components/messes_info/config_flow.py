@@ -24,11 +24,8 @@ class MessesInfoConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             config_entries.ConfigFlowResult: The result of the config flow step.
         """
         if user_input is not None:
-            church_name: str = user_input["church_name"]
-            postal_code: str = user_input["postal_code"]
-            update_interval: int = user_input["update_interval"]
             return self.async_create_entry(
-                title=f"{church_name} - {postal_code} [{update_interval}]",
+                title=f"{user_input['postal_code']} {user_input['church_name']}",
                 data=user_input,
             )
 
