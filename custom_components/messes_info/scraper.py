@@ -25,9 +25,11 @@ def parse_mass_from_soup(article: Tag) -> t.Dict[str, str]:
         "title": article.find_all("h3")[0].text.strip(),
         "subtitle": article.find_all("h4")[0].text.strip(),
         "picture": str(t.cast(Tag, article.find_all("img")[0])["src"] or ""),
-        "start_date": article.find_all("meta", {"itemprop": "startDate"})[
-            0
-        ].text.strip(),
+        "start_date": str(
+            t.cast(Tag, article.find_all("meta", {"itemprop": "startDate"})[0]).get(
+                "content"
+            )
+        ),
         "street_address": article.find_all("span", {"itemprop": "streetAddress"})[
             0
         ].text.strip(),
@@ -37,10 +39,16 @@ def parse_mass_from_soup(article: Tag) -> t.Dict[str, str]:
         "address_locality": article.find_all("span", {"itemprop": "addressLocality"})[
             0
         ].text.strip(),
-        "latitude": article.find_all("meta", {"itemprop": "latitude"})[0].text.strip(),
-        "longitude": article.find_all("meta", {"itemprop": "longitude"})[
-            0
-        ].text.strip(),
+        "latitude": str(
+            t.cast(Tag, article.find_all("meta", {"itemprop": "latitude"})[0]).get(
+                "content"
+            )
+        ),
+        "longitude": str(
+            t.cast(Tag, article.find_all("meta", {"itemprop": "longitude"})[0]).get(
+                "content"
+            )
+        ),
         "diocese": article.find_all("a", {"itemprop": "url"})[0].text.strip(),
         "info": article.find_all("i")[0].text.strip(),
     }
