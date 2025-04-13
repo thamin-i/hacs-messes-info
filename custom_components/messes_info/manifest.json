@@ -1,18 +1,20 @@
 {
     "domain": "messes_info",
-    "name": "Messes Info Scraper",
+    "name": "Messes Info",
     "version": "0.1.0",
     "documentation": "https://github.com/thamin-i/hacs_messes_info",
+    "dependencies": [],
+    "codeowners": [
+        "@thamin-i"
+    ],
     "requirements": [
         "aiohttp~=3.11.16",
         "beautifulsoup4~=4.13.3",
         "voluptuous~=0.15.2"
     ],
-    "dependencies": [],
-    "codeowners": [
-        "@thamin-i"
-    ],
     "iot_class": "cloud_polling",
+    "platforms": ["calendar"],
+    "integration_type": "integration",
     "config_flow": true,
-    "platforms": ["calendar"]
+    "logo": "logo.png"
 }

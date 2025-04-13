@@ -1,9 +1,10 @@
 {
-    "name": "Messes Info Scraper",
+    "name": "Messes Info",
     "content_in_root": false,
-    "domain": "messes_info",
-    "zip_release": false,
-    "country": "all",
+    "domains": ["messes_info"],
+    "country": "FR",
     "homeassistant": "2023.0.0",
-    "icon": "icon.png"
+    "render_readme": true,
+    "iot_class": "cloud_polling",
+    "integration_type": "integration"
 }

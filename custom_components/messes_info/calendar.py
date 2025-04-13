@@ -1,5 +1,6 @@
 """Calendar integration for the messes.info website."""
 
+import logging
 import typing as t
 from datetime import datetime, timedelta
 
@@ -9,31 +10,34 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.util import dt as dt_util
 
-from .const import DOMAIN
-from .coordinator import MessesInfoCoordinator
+from .const import CONF_CHURCH_NAME, CONF_POSTAL_CODE
+from .scraper import scrape_masses
+
+_LOGGER = logging.getLogger(__name__)
 
 
-class ChurchMassCalendar(CalendarEntity):
-    """Representation of a calendar entity for church masses."""
+class MessesInfoCalendar(CalendarEntity):
+    """Representation of a calendar entity for messes info."""
 
-    _name: str
-    coordinator: MessesInfoCoordinator
+    _postal_code: str
+    _church_name: str
     _events: t.List[CalendarEvent]
     _unique_id: str
+    _name: str
 
-    def __init__(
-        self, name: str, coordinator: MessesInfoCoordinator, unique_id: str
-    ) -> None:
+    def __init__(self, postal_code: str, church_name: str, unique_id: str) -> None:
         """Initialize the calendar entity.
 
         Args:
-            name (str): Name of the calendar.
-            coordinator (MessesInfoCoordinator): Data update coordinator.
+            postal_code (str): Postal code of the church.
+            church_name (str): Name of the church.
+            unique_id (str): Unique identifier for the calendar.
         """
-        self._name = name
-        self.coordinator = coordinator
+        self._postal_code = postal_code
+        self._church_name = church_name
         self._events = []
         self._unique_id = unique_id
+        self._name = f"Messes {church_name} [{postal_code}]"
 
     @property
     def name(self) -> str:
@@ -82,28 +86,36 @@ class ChurchMassCalendar(CalendarEntity):
         Returns:
             t.List[CalendarEvent]: List of events within the date range.
         """
-        return [
+        events: t.List[CalendarEvent] = [
             event for event in self._events if start_date <= event.start <= end_date
         ]
+        _LOGGER.info(
+            "Fetching %s events between %s and %s", len(events), start_date, end_date
+        )
+        return events
 
     async def async_update(self) -> None:
-        """Refresh event data from the coordinator."""
-        await self.coordinator.async_request_refresh()
-
-        self._events = []
-        print(f"Iterating over {len(self.coordinator.data.get('masses', []))} masses")
-        for mass in self.coordinator.data.get("masses", []):
-            print(f"Processing mass: {mass}")
-            dt = dt_util.parse_datetime(f"{mass['date']}T{mass['hour']}")
+        """Refresh events."""
+        masses: t.Dict[str, t.Any] = await scrape_masses(
+            postal_code=self._postal_code,
+            church_name=self._church_name,
+        )
+        _LOGGER.debug("Fetched %s masses", len(masses))
+        for mass in masses.values():
+            dt = dt_util.parse_datetime(mass["start_date"])
             if dt is None:
                 continue
+            _LOGGER.debug(
+                "Creating event for mass: %s (%s)", mass["title"], mass["subtitle"]
+            )
             self._events.append(
                 CalendarEvent(
-                    start=dt,
-                    end=dt + timedelta(hours=1),  # assuming 1 hour mass
-                    summary=mass["name"],
-                    location=mass["location"],
-                    description=f"Mass at {mass['location']}",
+                    start=dt_util.as_local(dt),
+                    end=dt_util.as_local(
+                        dt + timedelta(hours=1)  # assuming 1 hour mass
+                    ),
+                    summary=f"{mass['title']} ({mass['subtitle']})",
+                    location=f"{mass['street_address']}, {mass['postal_code']}, {mass['address_locality']}",  # pylint: disable=line-too-long
                 )
             )
 
@@ -132,7 +144,7 @@ class ChurchMassCalendar(CalendarEntity):
 
 
 async def async_setup_entry(
-    hass: HomeAssistant,
+    hass: HomeAssistant,  # pylint: disable=unused-argument
     entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
@@ -143,6 +155,13 @@ async def async_setup_entry(
         entry (ConfigEntry): Configuration entry.
         async_add_entities (AddEntitiesCallback): Callback to add entities.
     """
-    coordinator: MessesInfoCoordinator = hass.data[DOMAIN][entry.entry_id]
-    unique_id: str = f"messe_info_{entry.data['postal_code']}_{entry.data['church_name'].lower().replace(' ', '_')}"  # pylint: disable=line-too-long
-    async_add_entities([ChurchMassCalendar(entry.title, coordinator, unique_id)], True)
+    postal_code: str = entry.data[CONF_POSTAL_CODE]
+    church_name: str = entry.data[CONF_CHURCH_NAME]
+    sanitized_church_name: str = church_name.lower().replace(" ", "_")
+    calendar = MessesInfoCalendar(
+        postal_code=postal_code,
+        church_name=church_name,
+        unique_id=f"messe_info_{postal_code}_{sanitized_church_name}",
+    )
+    await calendar.async_update()
+    async_add_entities([calendar])

@@ -5,11 +5,13 @@ import typing as t
 import voluptuous as vol
 from homeassistant import config_entries
 
-from .const import DOMAIN
+from .const import CONF_CHURCH_NAME, CONF_POSTAL_CODE, DOMAIN
 
 
 class MessesInfoConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle a config flow for Messes Info."""
+
+    VERSION: int = 1
 
     async def async_step_user(
         self,
@@ -25,18 +27,18 @@ class MessesInfoConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         """
         if user_input is not None:
             return self.async_create_entry(
-                title=f"{user_input['postal_code']} {user_input['church_name']}",
-                data=user_input,
+                title=user_input[CONF_CHURCH_NAME], data=user_input
             )
 
-        schema: vol.Schema = vol.Schema(
-            {
-                vol.Required("postal_code"): str,
-                vol.Required("church_name"): str,
-                vol.Required("update_interval", default=24): int,
-            }
+        return self.async_show_form(
+            step_id="user",
+            data_schema=vol.Schema(
+                {
+                    vol.Required(CONF_POSTAL_CODE): str,
+                    vol.Required(CONF_CHURCH_NAME): str,
+                }
+            ),
         )
-        return self.async_show_form(step_id="user", data_schema=schema)
 
     def is_matching(self, other_flow: config_entries.ConfigFlow) -> bool:
         """Prevent duplicates — called internally by HA when config flow runs.
@@ -54,6 +56,4 @@ class MessesInfoConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             this_input.get("postal_code") == other_input.get("postal_code")
             and this_input.get("church_name", "").lower()
             == other_input.get("church_name", "").lower()
-            and this_input.get("update_interval", 0)
-            == other_input.get("update_interval", 0)
         )
