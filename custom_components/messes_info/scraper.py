@@ -1,96 +1,152 @@
-"""This module contains a function to scrape masses informations."""
+"""Scraper for the Messes Info website."""
 
+import json
 import typing as t
-from urllib.parse import quote
+from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 
 import aiohttp
 import async_timeout
-from bs4 import BeautifulSoup
-from bs4.element import Tag
-from homeassistant.helpers.update_coordinator import UpdateFailed
 
-from .const import BASE_URL
+from .logger import logger
 
 
-def parse_mass_from_soup(article: Tag) -> t.Dict[str, str]:
-    """Parse the mass details from an article tag.
+class MessesInfoScraper:
+    """Scraper for the Messes Info website."""
 
-    Args:
-        article (Tag): HTML article tag containing mass details.
-
-    Returns:
-        t.Dict[str, str]: Dict of mass details.
-    """
-    return {
-        "title": article.find_all("h3")[0].text.strip(),
-        "subtitle": article.find_all("h4")[0].text.strip(),
-        "picture": str(t.cast(Tag, article.find_all("img")[0])["src"] or ""),
-        "start_date": str(
-            t.cast(Tag, article.find_all("meta", {"itemprop": "startDate"})[0]).get(
-                "content"
-            )
-        ),
-        "street_address": article.find_all("span", {"itemprop": "streetAddress"})[
-            0
-        ].text.strip(),
-        "postal_code": article.find_all("span", {"itemprop": "postalCode"})[
-            0
-        ].text.strip(),
-        "address_locality": article.find_all("span", {"itemprop": "addressLocality"})[
-            0
-        ].text.strip(),
-        "latitude": str(
-            t.cast(Tag, article.find_all("meta", {"itemprop": "latitude"})[0]).get(
-                "content"
-            )
-        ),
-        "longitude": str(
-            t.cast(Tag, article.find_all("meta", {"itemprop": "longitude"})[0]).get(
-                "content"
-            )
-        ),
-        "diocese": article.find_all("a", {"itemprop": "url"})[0].text.strip(),
-        "info": article.find_all("i")[0].text.strip(),
+    url: str = "http://egliseinfo.catholique.fr/gwtRequest"
+    headers: t.Dict[str, str] = {
+        "Content-Type": "application/json; charset=UTF-8",
     }
+    request_timeout: int = 10
+    church: t.Dict[str, str]
 
+    def __init__(self, church: t.Dict[str, str]) -> None:
+        """Initialize the scraper.
 
-def parse_masses(html: str) -> t.Dict[str, t.Any]:
-    """Parse the HTML content using BeautifulSoup.
+        Args:
+            church (t.Dict[str, str]): Targeted church information.
+        """
+        self.church = church
+        logger.debug(
+            "MessesInfoScraper initialized with church: %s",
+            json.dumps(church),
+        )
 
-    Args:
-        html (str): HTML content to parse.
+    async def request_masses(self, day: str) -> t.Dict[str, t.Any]:
+        """Request masses list for a specific day.
 
-    Returns:
-        t.Dict[str, t.Any]: Dict of masses with their details.
-    """
-    soup: BeautifulSoup = BeautifulSoup(html, "html.parser")
-    articles = soup.find_all("article", {"itemtype": "http://schema.org/Event"})
-    masses: t.Dict[str, t.Any] = {}
-    for article in articles:
-        mass: t.Dict[str, str] = parse_mass_from_soup(t.cast(Tag, article))
-        masses[f"{mass['title']}{mass['subtitle']}"] = mass
-    return masses
+        Args:
+            day (str): Date in the format "dd-mm-yyyy".
 
+        Returns:
+            t.Dict[str, t.Any]: JSON response from the server.
+        """
+        logger.debug("Requesting masses for date: %s", day)
+        json_data: t.Dict[str, t.Any] = {
+            "F": "cef.kephas.shared.request.AppRequestFactory",
+            "I": [
+                {
+                    "O": "Bzv0wi60qgwcW5aKiRKrtgNaLKo=",
+                    "P": [
+                        f"eglise {self.church['name']} ville {self.church['city']} .fr {self.church['short_postal_code']} {self.church['full_postal_code']} {day} all-celebration",  # pylint:disable=line-too-long
+                        0,  # page number [int | None]
+                        100,  # page size [int | None]
+                        None,  # start localities [int | None]
+                        None,  # limit localities [int | None]
+                        None,  # ??? [str | None]
+                        None,  # query more [str | None]
+                    ],
+                    "R": [
+                        "listCelebrationTime.locality",
+                    ],
+                },
+            ],
+        }
 
-async def scrape_masses(
-    postal_code: str,
-    church_name: str,
-) -> t.Dict[str, t.Any]:
-    """Scrape masses information from messes.info.
+        async with async_timeout.timeout(self.request_timeout):
+            async with aiohttp.ClientSession(headers=self.headers) as session:
+                async with session.post(url=self.url, json=json_data) as response:
+                    json_response: t.Dict[str, t.Any] = await response.json()
+                    return json_response
 
-    Args:
-        postal_code (str): Church postal code.
-        church_name (str): Church name.
+    def parse_community(self, event_p: t.Dict[str, t.Any]) -> t.Dict[str, str]:
+        """Parse community information from the returned event.
 
-    Returns:
-        t.Dict[str, t.Any]: Dict of masses with their details.
-    """
-    url: str = f"{BASE_URL}/horaires/{quote(church_name + ' ' + postal_code)}"
-    try:
-        async with async_timeout.timeout(10):
-            async with aiohttp.ClientSession() as session:
-                async with session.get(url) as response:
-                    html: str = await response.text()
-                    return parse_masses(html)
-    except Exception as exception:
-        raise UpdateFailed(f"Error scraping page: {exception}") from exception
+        Args:
+            event_p (t.Dict[str, t.Any]): Event data.
+
+        Returns:
+            t.Dict[str, str]: Parsed community information.
+        """
+        return {
+            "name": event_p["name"],
+            "address": event_p["address"],
+            "postal_code": event_p["zipcode"],
+            "city": event_p["city"],
+            "latitude": event_p["latitude"],
+            "longitude": event_p["longitude"],
+        }
+
+    def parse_mass(self, event_p: t.Dict[str, t.Any]) -> t.Dict[str, str | datetime]:
+        """Parse mass information from the returned event.
+
+        Args:
+            event_p (t.Dict[str, t.Any]): Event data.
+
+        Returns:
+            t.Dict[str, str | datetime]: Parsed mass information.
+        """
+        start_date: datetime = datetime.strptime(
+            f"{event_p['date']} {event_p['time']}", "%Y-%m-%d %Hh%M"
+        ).replace(tzinfo=ZoneInfo("Europe/Paris"))
+        hours, minutes = map(int, event_p["length"].lower().replace("h", " ").split())
+        end_date = start_date + timedelta(hours=hours, minutes=minutes)
+        return {
+            "start_date": start_date,
+            "end_date": end_date,
+            "type": event_p.get("type", "Messe"),
+        }
+
+    def parse_masses(self, response: t.Dict[str, t.Any]) -> t.List[t.Dict[str, t.Any]]:
+        """Parse masses information from the JSON response.
+
+        Args:
+            response (t.Dict[str, t.Any]): JSON response data.
+
+        Returns:
+            t.List[t.Dict[str, t.Any]]: Parsed masses information.
+        """
+        for status in response["S"]:
+            if status is not True:
+                raise ValueError("Invalid response status")
+
+        masses: t.List[t.Dict[str, t.Any]] = []
+        community: t.Dict[str, str] | None = None
+        for event in response["O"]:
+            if "community" in event["P"]:
+                community = self.parse_community(event["P"])
+            elif "celebrationInfoId" in event["P"]:
+                masses.append(self.parse_mass(event["P"]))
+
+        for mass in masses:
+            mass["community"] = community
+        return masses
+
+    async def scrape(self, days_count: int) -> t.Dict[str, t.List[t.Dict[str, t.Any]]]:
+        """Scrape masses information for a given number of days.
+
+        Args:
+            days_count (int): Number of days to scrape. Starting from today.
+
+        Returns:
+            t.Dict[str, t.List[t.Dict[str, t.Any]]]: Scraped masses information.
+        """
+        days: t.List[str] = [
+            (datetime.today() + timedelta(days=i)).strftime("%d-%m-%Y")
+            for i in range(days_count)
+        ]
+        masses: t.Dict[str, t.List[t.Dict[str, t.Any]]] = {}
+        for day in days:
+            masses[day] = self.parse_masses(await self.request_masses(day))
+        return masses

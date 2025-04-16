@@ -1,5 +1,4 @@
 aiohttp~=3.11.16
-beautifulsoup4~=4.13.3
 homeassistant~=2025.4.1
 isort~=6.0.1
 mypy~=1.15.0

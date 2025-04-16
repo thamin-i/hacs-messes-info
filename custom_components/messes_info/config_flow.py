@@ -5,7 +5,7 @@ import typing as t
 import voluptuous as vol
 from homeassistant import config_entries
 
-from .const import CONF_CHURCH_NAME, CONF_POSTAL_CODE, DOMAIN
+from .const import CONF_CHURCH_NAME, CONF_CITY, CONF_POSTAL_CODE, DOMAIN
 
 
 class MessesInfoConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
@@ -34,6 +34,7 @@ class MessesInfoConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             step_id="user",
             data_schema=vol.Schema(
                 {
+                    vol.Required(CONF_CITY): str,
                     vol.Required(CONF_POSTAL_CODE): str,
                     vol.Required(CONF_CHURCH_NAME): str,
                 }
@@ -53,7 +54,8 @@ class MessesInfoConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         other_input: t.Any = other_flow.context.get("user_input", {})
 
         return bool(
-            this_input.get("postal_code") == other_input.get("postal_code")
+            this_input.get("city") == other_input.get("city")
+            and this_input.get("postal_code") == other_input.get("postal_code")
             and this_input.get("church_name", "").lower()
             == other_input.get("church_name", "").lower()
         )
