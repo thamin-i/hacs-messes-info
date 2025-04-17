@@ -9,7 +9,7 @@ from zoneinfo import ZoneInfo
 import aiohttp
 import async_timeout
 
-from .const import BASE_URL
+from .const import API_KEY, BASE_URL
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -50,7 +50,7 @@ class MessesInfoScraper:
             "F": "cef.kephas.shared.request.AppRequestFactory",
             "I": [
                 {
-                    "O": "Bzv0wi60qgwcW5aKiRKrtgNaLKo=",
+                    "O": API_KEY,
                     "P": [
                         f"eglise {self.church['name']} ville {self.church['city']} .fr {self.church['short_postal_code']} {self.church['full_postal_code']} {day} all-celebration",  # pylint:disable=line-too-long
                         0,  # page number [int | None]
