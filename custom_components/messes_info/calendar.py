@@ -10,7 +10,12 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.util import dt as dt_util
 
-from .const import CONF_CHURCH_NAME, CONF_CITY, CONF_POSTAL_CODE
+from .const import (
+    CONF_CHURCH_CITY,
+    CONF_CHURCH_NAME,
+    CONF_CHURCH_POSTAL_CODE,
+    CONF_DAYS_AHEAD,
+)
 from .logger import logger
 from .scraper import MessesInfoScraper
 
@@ -19,26 +24,35 @@ class MessesInfoCalendar(CalendarEntity):
     """Representation of a calendar entity for messes info."""
 
     _church_city: str
-    _postal_code: str
     _church_name: str
-    _events: t.List[CalendarEvent]
-    _unique_id: str
+    _days_ahead: int
+    _events: t.Dict[str, CalendarEvent]
     _name: str
+    _postal_code: str
+    _unique_id: str
 
-    def __init__(
-        self, city: str, postal_code: str, church_name: str, unique_id: str
+    def __init__(  # pylint: disable=too-many-arguments,too-many-positional-arguments
+        self,
+        days_ahead: int,
+        city: str,
+        postal_code: str,
+        church_name: str,
+        unique_id: str,
     ) -> None:
         """Initialize the calendar entity.
 
         Args:
+            days_ahead (int): Number of days ahead to fetch events.
+            city (str): City where the church is located.
             postal_code (str): Postal code of the church.
             church_name (str): Name of the church.
             unique_id (str): Unique identifier for the calendar.
         """
         self._church_city = city
+        self._days_ahead = days_ahead
         self._postal_code = postal_code
         self._church_name = church_name
-        self._events = []
+        self._events = {}
         self._unique_id = unique_id
         self._name = f"Messes {church_name} [{postal_code}]"
 
@@ -68,7 +82,7 @@ class MessesInfoCalendar(CalendarEntity):
             CalendarEvent | None: Next event or None if no events are available.
         """
         now: datetime = dt_util.now(time_zone=ZoneInfo("Europe/Paris"))
-        for event in sorted(self._events, key=lambda x: x.start):
+        for event in sorted(self._events.values(), key=lambda x: x.start):
             if event.start > now:
                 return event
         return None
@@ -90,7 +104,9 @@ class MessesInfoCalendar(CalendarEntity):
             t.List[CalendarEvent]: List of events within the date range.
         """
         events: t.List[CalendarEvent] = [
-            event for event in self._events if start_date <= event.start <= end_date
+            event
+            for event in self._events.values()
+            if start_date <= event.start <= end_date
         ]
         logger.info(
             "Fetching %s events between %s and %s", len(events), start_date, end_date
@@ -107,21 +123,23 @@ class MessesInfoCalendar(CalendarEntity):
                 "short_postal_code": self._postal_code[:2],
                 "full_postal_code": self._postal_code,
             }
-        ).scrape(days_count=7)
+        ).scrape(days_count=self._days_ahead)
         logger.debug("Fetched %s masses days", len(masses.keys()))
         for masses_list in masses.values():
             for mass in masses_list:
                 logger.debug(
                     "Creating event for mass: %s (%s)", mass["type"], mass["start_date"]
                 )
-                self._events.append(
-                    CalendarEvent(
-                        start=mass["start_date"],
-                        end=mass["end_date"],
-                        summary=f"{mass['type']}",
-                        location=f"{mass['community']['address']}, {mass['community']['postal_code']} {mass['community']['city']}",  # pylint:disable=line-too-long
-                        uid=f"{mass['community']['name']}_{mass['start_date'].isoformat()}",
-                    )
+                mass_uid: str = (
+                    f"{mass['community']['name']}_{mass['start_date'].isoformat()}"
+                )
+
+                self._events[mass_uid] = CalendarEvent(
+                    start=mass["start_date"],
+                    end=mass["end_date"],
+                    summary=f"{mass['type']}",
+                    location=f"{mass['community']['address']}, {mass['community']['postal_code']} {mass['community']['city']}",  # pylint:disable=line-too-long
+                    uid=mass_uid,
                 )
 
     async def async_create_event(self, **kwargs: t.Any) -> None:
@@ -160,11 +178,13 @@ async def async_setup_entry(
         entry (ConfigEntry): Configuration entry.
         async_add_entities (AddEntitiesCallback): Callback to add entities.
     """
-    city: str = entry.data[CONF_CITY]
-    postal_code: str = entry.data[CONF_POSTAL_CODE]
+    days_ahead: int = entry.data[CONF_DAYS_AHEAD]
+    city: str = entry.data[CONF_CHURCH_CITY]
+    postal_code: str = entry.data[CONF_CHURCH_POSTAL_CODE]
     church_name: str = entry.data[CONF_CHURCH_NAME]
     sanitized_church_name: str = church_name.lower().replace(" ", "_")
     calendar = MessesInfoCalendar(
+        days_ahead=days_ahead,
         city=city,
         postal_code=postal_code,
         church_name=church_name,

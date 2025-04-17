@@ -1,0 +1,16 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Configure Messes Info",
+        "description": "Set up your church preferences.",
+        "data": {
+          "days_ahead": "Number of days ahead that needs to be fetched",
+          "church_city": "Church City",
+          "church_postal_code": "Postal Code",
+          "church_name": "Church Name"
+        }
+      }
+    }
+  }
+}

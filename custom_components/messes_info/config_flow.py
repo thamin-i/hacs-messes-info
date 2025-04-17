@@ -5,7 +5,13 @@ import typing as t
 import voluptuous as vol
 from homeassistant import config_entries
 
-from .const import CONF_CHURCH_NAME, CONF_CITY, CONF_POSTAL_CODE, DOMAIN
+from .const import (
+    CONF_CHURCH_CITY,
+    CONF_CHURCH_NAME,
+    CONF_CHURCH_POSTAL_CODE,
+    CONF_DAYS_AHEAD,
+    DOMAIN,
+)
 
 
 class MessesInfoConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
@@ -34,8 +40,9 @@ class MessesInfoConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             step_id="user",
             data_schema=vol.Schema(
                 {
-                    vol.Required(CONF_CITY): str,
-                    vol.Required(CONF_POSTAL_CODE): str,
+                    vol.Optional(CONF_DAYS_AHEAD, default=7): int,
+                    vol.Required(CONF_CHURCH_CITY): str,
+                    vol.Required(CONF_CHURCH_POSTAL_CODE): str,
                     vol.Required(CONF_CHURCH_NAME): str,
                 }
             ),

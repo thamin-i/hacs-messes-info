@@ -1,0 +1,16 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Configurer Messes Info",
+        "description": "Définissez vos préférences d'église.",
+        "data": {
+          "days_ahead": "Nombre de jours à l'avance à récupérer",
+          "church_city": "Ville de l'église",
+          "church_postal_code": "Code postal de l'église",
+          "church_name": "Nom de l'église"
+        }
+      }
+    }
+  }
+}
