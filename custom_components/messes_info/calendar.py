@@ -1,7 +1,8 @@
 """Calendar integration for the messes.info website."""
 
+import logging
 import typing as t
-from datetime import datetime
+from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
 from homeassistant.components.calendar import CalendarEntity, CalendarEvent
@@ -16,20 +17,22 @@ from .const import (
     CONF_CHURCH_POSTAL_CODE,
     CONF_DAYS_AHEAD,
 )
-from .logger import logger
 from .scraper import MessesInfoScraper
 
+_LOGGER = logging.getLogger(__name__)
 
-class MessesInfoCalendar(CalendarEntity):
+
+class MessesInfoCalendar(CalendarEntity):  # pylint: disable=too-many-instance-attributes
     """Representation of a calendar entity for messes info."""
 
     _church_city: str
     _church_name: str
     _days_ahead: int
-    _events: t.Dict[str, CalendarEvent]
+    _events: t.Dict[str, t.List[CalendarEvent]]
     _name: str
     _postal_code: str
     _unique_id: str
+    scraper: MessesInfoScraper
 
     def __init__(  # pylint: disable=too-many-arguments,too-many-positional-arguments
         self,
@@ -55,6 +58,14 @@ class MessesInfoCalendar(CalendarEntity):
         self._events = {}
         self._unique_id = unique_id
         self._name = f"Messes {church_name} [{postal_code}]"
+        self.scraper = MessesInfoScraper(
+            church={
+                "name": church_name,
+                "city": city,
+                "short_postal_code": postal_code[:2],
+                "full_postal_code": postal_code,
+            },
+        )
 
     @property
     def name(self) -> str:
@@ -82,7 +93,10 @@ class MessesInfoCalendar(CalendarEntity):
             CalendarEvent | None: Next event or None if no events are available.
         """
         now: datetime = dt_util.now(time_zone=ZoneInfo("Europe/Paris"))
-        for event in sorted(self._events.values(), key=lambda x: x.start):
+        events: t.List[CalendarEvent] = [
+            event for events_list in self._events.values() for event in events_list
+        ]
+        for event in sorted(events, key=lambda x: x.start):
             if event.start > now:
                 return event
         return None
@@ -105,41 +119,59 @@ class MessesInfoCalendar(CalendarEntity):
         """
         events: t.List[CalendarEvent] = [
             event
-            for event in self._events.values()
+            for events_list in self._events.values()
+            for event in events_list
             if start_date <= event.start <= end_date
         ]
-        logger.info(
-            "Fetching %s events between %s and %s", len(events), start_date, end_date
+        _LOGGER.debug(
+            "Fetched %s events between %s and %s", len(events), start_date, end_date
         )
         return events
+
+    def __cleanup_old_events(self, days_to_clean: int = 2) -> None:
+        """Clean up old events.
+
+        Args:
+            days_to_clean (int, optional): Number of days to clean. Defaults to 2.
+        """
+        _LOGGER.debug("Cleaning up old events")
+        previous_days: t.List[str] = [
+            (datetime.today() - timedelta(days=i)).strftime("%d-%m-%Y")
+            for i in range(1, days_to_clean)
+        ]
+        for day in previous_days:
+            if day in self._events:
+                del self._events[day]
+                _LOGGER.info("Removed old events for %s", day)
+        _LOGGER.debug("Cleaned up old events")
 
     async def async_update(self) -> None:
         """Refresh events."""
         masses: t.Dict[str, t.List[t.Dict[str, t.Any]]] = {}
-        masses = await MessesInfoScraper(
-            church={
-                "name": self._church_name,
-                "city": self._church_city,
-                "short_postal_code": self._postal_code[:2],
-                "full_postal_code": self._postal_code,
-            }
-        ).scrape(days_count=self._days_ahead)
-        logger.debug("Fetched %s masses days", len(masses.keys()))
-        for masses_list in masses.values():
+        masses = await self.scraper.scrape(
+            days_count=self._days_ahead,
+            scraped_days=list(self._events.keys()),
+        )
+        _LOGGER.debug("Fetched %s masses days", len(masses.keys()))
+        self.__cleanup_old_events()
+        for masses_day, masses_list in masses.items():
+            self._events[masses_day] = []
             for mass in masses_list:
-                logger.debug(
+                _LOGGER.debug(
                     "Creating event for mass: %s (%s)", mass["type"], mass["start_date"]
                 )
                 mass_uid: str = (
                     f"{mass['community']['name']}_{mass['start_date'].isoformat()}"
                 )
 
-                self._events[mass_uid] = CalendarEvent(
-                    start=mass["start_date"],
-                    end=mass["end_date"],
-                    summary=f"{mass['type']}",
-                    location=f"{mass['community']['address']}, {mass['community']['postal_code']} {mass['community']['city']}",  # pylint:disable=line-too-long
-                    uid=mass_uid,
+                self._events[masses_day].append(
+                    CalendarEvent(
+                        start=mass["start_date"],
+                        end=mass["end_date"],
+                        summary=f"{mass['type']}",
+                        location=f"{mass['community']['address']}, {mass['community']['postal_code']} {mass['community']['city']}",  # pylint:disable=line-too-long
+                        uid=mass_uid,
+                    )
                 )
 
     async def async_create_event(self, **kwargs: t.Any) -> None:

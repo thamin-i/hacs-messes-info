@@ -33,7 +33,8 @@ class MessesInfoConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         """
         if user_input is not None:
             return self.async_create_entry(
-                title=user_input[CONF_CHURCH_NAME], data=user_input
+                title=f"Messes Info for {user_input[CONF_CHURCH_NAME]} ({user_input[CONF_CHURCH_POSTAL_CODE]}, {user_input[CONF_CHURCH_CITY]})",  # pylint: disable=line-too-long
+                data=user_input,
             )
 
         return self.async_show_form(
@@ -41,10 +42,11 @@ class MessesInfoConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             data_schema=vol.Schema(
                 {
                     vol.Optional(CONF_DAYS_AHEAD, default=7): int,
-                    vol.Required(CONF_CHURCH_CITY): str,
-                    vol.Required(CONF_CHURCH_POSTAL_CODE): str,
-                    vol.Required(CONF_CHURCH_NAME): str,
-                }
+                    vol.Required(CONF_CHURCH_CITY, default="Paris"): str,
+                    vol.Required(CONF_CHURCH_POSTAL_CODE, default="75001"): str,
+                    vol.Required(CONF_CHURCH_NAME, default="Notre-Dame"): str,
+                },
+                extra=vol.PREVENT_EXTRA,
             ),
         )
 
@@ -61,8 +63,9 @@ class MessesInfoConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         other_input: t.Any = other_flow.context.get("user_input", {})
 
         return bool(
-            this_input.get("city") == other_input.get("city")
-            and this_input.get("postal_code") == other_input.get("postal_code")
-            and this_input.get("church_name", "").lower()
-            == other_input.get("church_name", "").lower()
+            this_input.get(CONF_DAYS_AHEAD) == other_input.get(CONF_DAYS_AHEAD)
+            and this_input.get(CONF_CHURCH_CITY) == other_input.get(CONF_CHURCH_CITY)
+            and this_input.get(CONF_CHURCH_POSTAL_CODE)
+            == other_input.get(CONF_CHURCH_POSTAL_CODE)
+            and this_input.get(CONF_CHURCH_NAME) == other_input.get(CONF_CHURCH_NAME)
         )

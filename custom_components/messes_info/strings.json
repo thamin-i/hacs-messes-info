@@ -1,0 +1,14 @@
+{
+    "config": {
+        "step": {
+            "user": {
+                "data": {
+                    "days_ahead": "[%key:common::config_flow::step::user::data::days_ahead%]",
+                    "church_city": "[%key:common::config_flow::step::user::data::church_city%]",
+                    "church_postal_code": "[%key:common::config_flow::step::user::data::church_postal_code%]",
+                    "church_name": "[%key:common::config_flow::step::user::data::church_name%]"
+                }
+            }
+        }
+    }
+}

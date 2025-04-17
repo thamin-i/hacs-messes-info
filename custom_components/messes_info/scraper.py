@@ -1,6 +1,7 @@
 """Scraper for the Messes Info website."""
 
 import json
+import logging
 import typing as t
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
@@ -8,13 +9,15 @@ from zoneinfo import ZoneInfo
 import aiohttp
 import async_timeout
 
-from .logger import logger
+from .const import BASE_URL
+
+_LOGGER = logging.getLogger(__name__)
 
 
 class MessesInfoScraper:
     """Scraper for the Messes Info website."""
 
-    url: str = "http://egliseinfo.catholique.fr/gwtRequest"
+    url: str = f"{BASE_URL}/gwtRequest"
     headers: t.Dict[str, str] = {
         "Content-Type": "application/json; charset=UTF-8",
     }
@@ -28,7 +31,7 @@ class MessesInfoScraper:
             church (t.Dict[str, str]): Targeted church information.
         """
         self.church = church
-        logger.debug(
+        _LOGGER.debug(
             "MessesInfoScraper initialized with church: %s",
             json.dumps(church),
         )
@@ -42,7 +45,7 @@ class MessesInfoScraper:
         Returns:
             t.Dict[str, t.Any]: JSON response from the server.
         """
-        logger.debug("Requesting masses for date: %s", day)
+        _LOGGER.debug("Requesting masses for date: %s", day)
         json_data: t.Dict[str, t.Any] = {
             "F": "cef.kephas.shared.request.AppRequestFactory",
             "I": [
@@ -133,11 +136,14 @@ class MessesInfoScraper:
             mass["community"] = community
         return masses
 
-    async def scrape(self, days_count: int) -> t.Dict[str, t.List[t.Dict[str, t.Any]]]:
+    async def scrape(
+        self, days_count: int, scraped_days: t.List[str]
+    ) -> t.Dict[str, t.List[t.Dict[str, t.Any]]]:
         """Scrape masses information for a given number of days.
 
         Args:
             days_count (int): Number of days to scrape. Starting from today.
+            scraped_days (t.List[str]): List of already scraped days.
 
         Returns:
             t.Dict[str, t.List[t.Dict[str, t.Any]]]: Scraped masses information.
@@ -146,6 +152,7 @@ class MessesInfoScraper:
             (datetime.today() + timedelta(days=i)).strftime("%d-%m-%Y")
             for i in range(days_count)
         ]
+        days = [day for day in days if day not in scraped_days]
         masses: t.Dict[str, t.List[t.Dict[str, t.Any]]] = {}
         for day in days:
             masses[day] = self.parse_masses(await self.request_masses(day))

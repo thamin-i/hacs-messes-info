@@ -1,8 +1,9 @@
 {
-    "domain": "messes_info",
     "name": "Messes Info",
-    "version": "0.1.0",
+    "domain": "messes_info",
+    "version": "1.0.0",
     "documentation": "https://github.com/thamin-i/hacs_messes_info",
+    "issue_tracker": "https://github.com/thamin-i/hacs_messes_info/issues",
     "dependencies": [],
     "codeowners": [
         "@thamin-i"
@@ -13,7 +14,6 @@
     ],
     "iot_class": "cloud_polling",
     "platforms": ["calendar"],
-    "integration_type": "integration",
-    "config_flow": true,
-    "logo": "logo.png"
+    "integration_type": "entity",
+    "config_flow": true
 }
