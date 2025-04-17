@@ -2,7 +2,7 @@
   "config": {
     "step": {
       "user": {
-        "title": "Configure Messes Info",
+        "title": "Configure Messes Info (unofficial)",
         "description": "Set up your church preferences.",
         "data": {
           "days_ahead": "Number of days ahead that needs to be fetched",

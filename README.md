@@ -1,6 +1,6 @@
-# Messes Info
+# Messes Info (unofficial)
 
-Messes Info is a custom Home Assistant Community Store (HACS) integration that fetches mass data from the [https://messes.info](https://messes.info) website using its GWT API. This integration allows you to display mass schedules directly in your Home Assistant instance.
+Messes Info (unofficial) is a custom Home Assistant Community Store (HACS) integration that fetches mass data from the [https://messes.info](https://messes.info) website using its GWT API. This integration allows you to display mass schedules directly in your Home Assistant instance.
 
 ## Features
 
@@ -21,14 +21,14 @@ Messes Info is a custom Home Assistant Community Store (HACS) integration that f
 2. Go to the "Integrations" section.
 3. Click on the three-dot menu in the top-right corner and select "Custom repositories."
 4. Add the following repository URL: `https://github.com/thamin-i/hacs_messes_info` and select the category as "Integration."
-5. Search for "Messes Info" in the HACS Integrations section and click "Install."
+5. Search for "Messes Info (unofficial)" in the HACS Integrations section and click "Install."
 6. Restart Home Assistant to complete the installation.
 
 ## Configuration
 
 1. After restarting Home Assistant, go to **Settings** > **Devices & Services** > **Integrations**.
-2. Click on "Add Integration" and search for "Messes Info."
-3. Follow the on-screen instructions to configure the integration.
+2. Click on "Add Integration" and search for "Messes Info (unofficial)".
+3. Follow the on-screen instructions to configure the integration (find your church informations on [messes.info](https://messes.info)).
 
 ## Requirements
 
@@ -67,3 +67,13 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 ## Acknowledgments
 
 - API reverse-engineered with the help of the [MassAPI](https://github.com/lologhi/MassAPI.git) repository.
+
+## Screenshots
+
+Here are some screenshots of the integration in action:
+
+### Integration Setup
+![Integration Setup](screenshots/integration_setup.png)
+
+### Calendar View
+![Calendar View](screenshots/calendar_view.png)

@@ -33,7 +33,7 @@ class MessesInfoConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         """
         if user_input is not None:
             return self.async_create_entry(
-                title=f"Messes Info for {user_input[CONF_CHURCH_NAME]} ({user_input[CONF_CHURCH_POSTAL_CODE]}, {user_input[CONF_CHURCH_CITY]})",  # pylint: disable=line-too-long
+                title=f"Messes infos for {user_input[CONF_CHURCH_NAME]} ({user_input[CONF_CHURCH_POSTAL_CODE]}, {user_input[CONF_CHURCH_CITY]})",  # pylint: disable=line-too-long
                 data=user_input,
             )
 
@@ -43,8 +43,10 @@ class MessesInfoConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 {
                     vol.Optional(CONF_DAYS_AHEAD, default=7): int,
                     vol.Required(CONF_CHURCH_CITY, default="Paris"): str,
-                    vol.Required(CONF_CHURCH_POSTAL_CODE, default="75001"): str,
-                    vol.Required(CONF_CHURCH_NAME, default="Notre-Dame"): str,
+                    vol.Required(CONF_CHURCH_POSTAL_CODE, default="75004"): str,
+                    vol.Required(
+                        CONF_CHURCH_NAME, default="Notre-Dame de Paris (Cathédrale)"
+                    ): str,
                 },
                 extra=vol.PREVENT_EXTRA,
             ),
