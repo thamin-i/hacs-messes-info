@@ -20,7 +20,7 @@ Messes Info (unofficial) is a custom Home Assistant Community Store (HACS) integ
 1. Open HACS in your Home Assistant instance.
 2. Go to the "Integrations" section.
 3. Click on the three-dot menu in the top-right corner and select "Custom repositories."
-4. Add the following repository URL: `https://github.com/thamin-i/hacs_messes_info` and select the category as "Integration."
+4. Add the following repository URL: `https://github.com/thamin-i/hacs-messes-info` and select the category as "Integration."
 5. Search for "Messes Info (unofficial)" in the HACS Integrations section and click "Install."
 6. Restart Home Assistant to complete the installation.
 
@@ -58,7 +58,7 @@ If you encounter any issues:
 
 ## Contributing
 
-Contributions are welcome! If you would like to contribute to this project, please open an issue or submit a pull request on the [GitHub repository](https://github.com/thamin-i/hacs_messes_info).
+Contributions are welcome! If you would like to contribute to this project, please open an issue or submit a pull request on the [GitHub repository](https://github.com/thamin-i/hacs-messes-info).
 
 ## License
 

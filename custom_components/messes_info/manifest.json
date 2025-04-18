@@ -2,8 +2,8 @@
     "name": "Messes Info (unofficial)",
     "domain": "messes_info",
     "version": "1.0.0",
-    "documentation": "https://github.com/thamin-i/hacs_messes_info",
-    "issue_tracker": "https://github.com/thamin-i/hacs_messes_info/issues",
+    "documentation": "https://github.com/thamin-i/hacs-messes-info",
+    "issue_tracker": "https://github.com/thamin-i/hacs-messes-info/issues",
     "dependencies": [],
     "codeowners": [
         "@thamin-i"
