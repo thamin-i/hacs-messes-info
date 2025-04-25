@@ -91,6 +91,33 @@ class MessesInfoScraper:
             "longitude": event_p["longitude"],
         }
 
+    def __parse_mass_length(self, raw_length: str) -> t.Tuple[int, int]:
+        """Parse mass length from the returned event.
+        This function converts the mass length from a string format (e.g., "1h30" or "30min")
+        to a tuple of integers representing hours and minutes.
+
+        Args:
+            raw_length (str): Mass length in string format.
+
+        Returns:
+            t.Tuple[int, int]: Parsed mass length as a tuple of (hours, minutes).
+        """
+        hours: int
+        minutes: int
+        length: t.List[str] = raw_length.lower().replace("h", " ").split()
+        if len(length) == 1:
+            if "min" in length[0]:
+                hours = 0
+                minutes = int(length[0].replace("min", ""))
+            else:
+                hours = int(length[0])
+                minutes = 0
+        elif len(length) == 2:
+            hours, minutes = map(int, length)
+        else:
+            raise ValueError("Invalid length format")
+        return hours, minutes
+
     def parse_mass(self, event_p: t.Dict[str, t.Any]) -> t.Dict[str, str | datetime]:
         """Parse mass information from the returned event.
 
@@ -103,7 +130,7 @@ class MessesInfoScraper:
         start_date: datetime = datetime.strptime(
             f"{event_p['date']} {event_p['time']}", "%Y-%m-%d %Hh%M"
         ).replace(tzinfo=ZoneInfo("Europe/Paris"))
-        hours, minutes = map(int, event_p["length"].lower().replace("h", " ").split())
+        hours, minutes = self.__parse_mass_length(event_p["length"])
         end_date = start_date + timedelta(hours=hours, minutes=minutes)
         return {
             "start_date": start_date,
