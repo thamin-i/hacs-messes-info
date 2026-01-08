@@ -1,7 +1,7 @@
 {
     "name": "Messes Info (unofficial)",
     "domain": "messes_info",
-    "version": "1.1.1",
+    "version": "1.1.2",
     "documentation": "https://github.com/thamin-i/hacs-messes-info",
     "issue_tracker": "https://github.com/thamin-i/hacs-messes-info/issues",
     "dependencies": [],
@@ -9,8 +9,8 @@
         "@thamin-i"
     ],
     "requirements": [
-        "aiohttp~=3.13.2",
-        "voluptuous~=0.15.2"
+        "aiohttp~=3.13.3",
+        "voluptuous~=0.16.0"
     ],
     "iot_class": "cloud_polling",
     "platforms": ["calendar"],
