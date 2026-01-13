@@ -1,8 +1,8 @@
 aiohttp~=3.13.3
-homeassistant~=2026.1.0
+homeassistant~=2026.1.1
 isort~=7.0.0
 mypy~=1.19.1
 pre_commit~=4.5.1
 pylint~=4.0.4
-ruff~=0.14.10
-voluptuous~=0.16.0
+ruff~=0.14.11
+voluptuous~=0.15.2
